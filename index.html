@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Affiliate-Recherche &amp; Scoring</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: #f4f6f8;
+    color: #1a2332;
+    line-height: 1.5;
+    padding: 24px;
+  }
+  .container { max-width: 1200px; margin: 0 auto; }
+  header { margin-bottom: 32px; }
+  h1 { font-size: 28px; color: #0a3d62; margin-bottom: 4px; }
+  .subtitle { color: #5a6a7a; font-size: 14px; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+  .card {
+    background: white;
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05), 0 4px 12px rgba(0,0,0,0.04);
+  }
+  h2 { font-size: 18px; color: #0a3d62; margin-bottom: 16px; }
+  .form-row { margin-bottom: 14px; }
+  label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: #3a4a5a;
+    margin-bottom: 4px;
+  }
+  input[type="text"], input[type="url"], select, textarea {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid #d1d9e0;
+    border-radius: 6px;
+    font-size: 14px;
+    font-family: inherit;
+    background: white;
+    transition: border-color 0.15s;
+  }
+  input:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: #0a8fa8;
+    box-shadow: 0 0 0 3px rgba(10,143,168,0.1);
+  }
+  textarea { resize: vertical; min-height: 60px; }
+  .slider-row { display: flex; align-items: center; gap: 12px; }
+  .slider-row input[type="range"] { flex: 1; }
+  .slider-value {
+    min-width: 32px;
+    text-align: center;
+    font-weight: 600;
+    color: #0a8fa8;
+    background: #e6f4f7;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 13px;
+  }
+  .button-row { display: flex; gap: 8px; margin-top: 20px; flex-wrap: wrap; }
+  button {
+    padding: 10px 18px;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: inherit;
+  }
+  .btn-primary { background: #0a8fa8; color: white; }
+  .btn-primary:hover { background: #087a90; }
+  .btn-secondary { background: #e6ebf0; color: #3a4a5a; }
+  .btn-secondary:hover { background: #d1d9e0; }
+  .btn-danger { background: #fff; color: #c0392b; border: 1px solid #f0c5be; }
+  .btn-danger:hover { background: #fdebe8; }
+  .result-box {
+    margin-top: 20px;
+    padding: 20px;
+    border-radius: 8px;
+    border: 2px solid;
+  }
+  .result-box.annehmen { background: #e8f7ed; border-color: #27ae60; }
+  .result-box.pruefen { background: #fff8e1; border-color: #f39c12; }
+  .result-box.ablehnen { background: #fdebe8; border-color: #c0392b; }
+  .result-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+  .result-label { font-size: 20px; font-weight: 700; }
+  .result-label.annehmen { color: #1e7e3e; }
+  .result-label.pruefen { color: #b87a08; }
+  .result-label.ablehnen { color: #962b1f; }
+  .score-circle {
+    width: 56px; height: 56px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; font-weight: 700;
+    color: white;
+  }
+  .score-circle.annehmen { background: #27ae60; }
+  .score-circle.pruefen { background: #f39c12; }
+  .score-circle.ablehnen { background: #c0392b; }
+  .breakdown { margin-top: 12px; }
+  .breakdown-item {
+    display: flex; justify-content: space-between;
+    padding: 4px 0; font-size: 13px;
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+  }
+  .breakdown-item:last-child { border-bottom: none; }
+  .reasons { margin-top: 12px; font-size: 14px; }
+  .reasons ul { margin-left: 18px; margin-top: 6px; }
+  .reasons li { margin-bottom: 4px; }
+  .filters { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+  .filters select { width: auto; flex: 1; min-width: 140px; }
+  .history-list { max-height: 600px; overflow-y: auto; }
+  .history-item {
+    padding: 12px;
+    border: 1px solid #e6ebf0;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .history-item:hover { border-color: #0a8fa8; background: #f9fcfd; }
+  .history-item-header { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .history-name { font-weight: 600; color: #1a2332; flex: 1; word-break: break-all; }
+  .history-meta { font-size: 12px; color: #7a8a9a; margin-top: 4px; }
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+  }
+  .badge.annehmen { background: #d4f0dc; color: #1e7e3e; }
+  .badge.pruefen { background: #ffeec2; color: #b87a08; }
+  .badge.ablehnen { background: #fbdcd6; color: #962b1f; }
+  .empty-state {
+    text-align: center;
+    padding: 32px 16px;
+    color: #7a8a9a;
+    font-size: 14px;
+  }
+  .stat-row { display: flex; gap: 12px; margin-bottom: 16px; }
+  .stat {
+    flex: 1;
+    background: #f4f6f8;
+    padding: 10px;
+    border-radius: 6px;
+    text-align: center;
+  }
+  .stat-value { font-size: 20px; font-weight: 700; color: #0a3d62; }
+  .stat-label { font-size: 11px; color: #5a6a7a; text-transform: uppercase; letter-spacing: 0.3px; }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>Affiliate-Recherche &amp; Scoring</h1>
+    <p class="subtitle">Bewerte Publisher-Seiten und entscheide: Annehmen, Prüfen oder Ablehnen.</p>
+  </header>
+
+  <div class="grid">
+    <!-- INPUT CARD -->
+    <div class="card">
+      <h2>Neue Bewertung</h2>
+
+      <div class="form-row">
+        <label for="publisherName">Publisher-Name *</label>
+        <input type="text" id="publisherName" placeholder="z.B. ReiseBlog Müller">
+      </div>
+
+      <div class="form-row">
+        <label for="url">URL</label>
+        <input type="url" id="url" placeholder="https://...">
+      </div>
+
+      <div class="form-row">
+        <label for="programm">Programm</label>
+        <select id="programm">
+          <option value="Mein Schiff">Mein Schiff</option>
+          <option value="Mein Schiff International">Mein Schiff International</option>
+          <option value="Hapag-Lloyd Cruises">Hapag-Lloyd Cruises</option>
+          <option value="Meßmer">Meßmer</option>
+          <option value="Tempur">Tempur</option>
+          <option value="Anderes">Anderes</option>
+        </select>
+      </div>
+
+      <div class="form-row">
+        <label for="thema">Themen-Match (Wie gut passt die Seite thematisch?)</label>
+        <select id="thema">
+          <option value="5">Sehr stark — direkter Themenfit</option>
+          <option value="4">Stark — verwandtes Thema mit klarer Überschneidung</option>
+          <option value="3" selected>Mittel — teilweise relevant</option>
+          <option value="2">Schwach — nur am Rand passend</option>
+          <option value="1">Kein Match — unpassend</option>
+        </select>
+      </div>
+
+      <div class="form-row">
+        <label for="werbemethode">Hauptwerbemethode</label>
+        <select id="werbemethode">
+          <option value="content">Content / Redaktion / Blog</option>
+          <option value="influencer">Social / Influencer</option>
+          <option value="email">E-Mail / Newsletter</option>
+          <option value="loyalty">Loyalty / Bonusprogramm</option>
+          <option value="cashback">Cashback</option>
+          <option value="voucher">Gutschein / Voucher</option>
+          <option value="sem">SEM / PPC</option>
+          <option value="display">Display / Retargeting</option>
+        </select>
+      </div>
+
+      <div class="form-row">
+        <label for="reichweite">Geschätzte Reichweite (monatliche Besucher)</label>
+        <select id="reichweite">
+          <option value="1">Klein (&lt; 10.000)</option>
+          <option value="2" selected>Mittel (10k – 100k)</option>
+          <option value="3">Groß (100k – 1 Mio.)</option>
+          <option value="4">Sehr groß (&gt; 1 Mio.)</option>
+        </select>
+      </div>
+
+      <div class="form-row">
+        <label>Zielgruppen-Match: <span id="zielgruppeVal">3</span>/5</label>
+        <div class="slider-row">
+          <input type="range" id="zielgruppe" min="1" max="5" value="3">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <label>Inhaltliche Qualität: <span id="qualitaetVal">3</span>/5</label>
+        <div class="slider-row">
+          <input type="range" id="qualitaet" min="1" max="5" value="3">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <label>Brand Safety: <span id="brandsafetyVal">3</span>/5</label>
+        <div class="slider-row">
+          <input type="range" id="brandsafety" min="1" max="5" value="3">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <label for="land">Länderfokus</label>
+        <select id="land">
+          <option value="DE">Deutschland</option>
+          <option value="DACH">DACH</option>
+          <option value="EU">Europa</option>
+          <option value="Welt">International</option>
+        </select>
+      </div>
+
+      <div class="form-row">
+        <label for="notizen">Notizen</label>
+        <textarea id="notizen" placeholder="Auffälligkeiten, Sonderkonditionen, Gesprächsverlauf..."></textarea>
+      </div>
+
+      <div class="button-row">
+        <button class="btn-primary" onclick="evaluate()">Bewerten</button>
+        <button class="btn-secondary" onclick="saveEvaluation()">Speichern</button>
+        <button class="btn-secondary" onclick="resetForm()">Zurücksetzen</button>
+      </div>
+
+      <div id="resultBox"></div>
+    </div>
+
+    <!-- HISTORY CARD -->
+    <div class="card">
+      <h2>Bewertungs-Historie</h2>
+
+      <div id="stats" class="stat-row"></div>
+
+      <div class="filters">
+        <select id="filterProgramm" onchange="renderHistory()">
+          <option value="">Alle Programme</option>
+          <option value="Mein Schiff">Mein Schiff</option>
+          <option value="Mein Schiff International">Mein Schiff International</option>
+          <option value="Hapag-Lloyd Cruises">Hapag-Lloyd Cruises</option>
+          <option value="Meßmer">Meßmer</option>
+          <option value="Tempur">Tempur</option>
+          <option value="Anderes">Anderes</option>
+        </select>
+        <select id="filterEmpfehlung" onchange="renderHistory()">
+          <option value="">Alle Empfehlungen</option>
+          <option value="annehmen">Annehmen</option>
+          <option value="pruefen">Prüfen</option>
+          <option value="ablehnen">Ablehnen</option>
+        </select>
+      </div>
+
+      <div class="button-row" style="margin-top:0; margin-bottom:16px;">
+        <button class="btn-secondary" onclick="exportCSV()">Als CSV exportieren</button>
+        <button class="btn-danger" onclick="clearAll()">Alle löschen</button>
+      </div>
+
+      <div id="historyList" class="history-list"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Slider live values
+  ['zielgruppe', 'qualitaet', 'brandsafety'].forEach(id => {
+    const el = document.getElementById(id);
+    const valEl = document.getElementById(id + 'Val');
+    el.addEventListener('input', () => valEl.textContent = el.value);
+  });
+
+  // Werbemethoden-Bewertung pro Programm-Typ (Premium vs. Mass)
+  const werbemethodeScore = {
+    'Mein Schiff':            { content: 5, influencer: 5, email: 4, loyalty: 4, cashback: 2, voucher: 2, sem: 3, display: 3 },
+    'Mein Schiff International': { content: 5, influencer: 5, email: 4, loyalty: 4, cashback: 2, voucher: 2, sem: 3, display: 3 },
+    'Hapag-Lloyd Cruises':    { content: 5, influencer: 4, email: 4, loyalty: 4, cashback: 1, voucher: 1, sem: 3, display: 3 },
+    'Meßmer':                 { content: 5, influencer: 5, email: 4, loyalty: 3, cashback: 4, voucher: 4, sem: 3, display: 3 },
+    'Tempur':                 { content: 5, influencer: 4, email: 4, loyalty: 3, cashback: 3, voucher: 3, sem: 4, display: 3 },
+    'Anderes':                { content: 5, influencer: 4, email: 4, loyalty: 4, cashback: 3, voucher: 3, sem: 3, display: 3 }
+  };
+
+  function evaluate() {
+    const data = collectFormData();
+    if (!data.publisherName) {
+      alert('Bitte mindestens einen Publisher-Namen eingeben.');
+      return null;
+    }
+    const result = scoreData(data);
+    renderResult(result, data);
+    return { data, result };
+  }
+
+  function collectFormData() {
+    return {
+      publisherName: document.getElementById('publisherName').value.trim(),
+      url: document.getElementById('url').value.trim(),
+      programm: document.getElementById('programm').value,
+      thema: parseInt(document.getElementById('thema').value),
+      werbemethode: document.getElementById('werbemethode').value,
+      reichweite: parseInt(document.getElementById('reichweite').value),
+      zielgruppe: parseInt(document.getElementById('zielgruppe').value),
+      qualitaet: parseInt(document.getElementById('qualitaet').value),
+      brandsafety: parseInt(document.getElementById('brandsafety').value),
+      land: document.getElementById('land').value,
+      notizen: document.getElementById('notizen').value.trim()
+    };
+  }
+
+  function scoreData(d) {
+    // Normalisierung auf 0–100, gewichtet
+    const themaScore = (d.thema / 5) * 100;
+    const wmScore = (werbemethodeScore[d.programm][d.werbemethode] / 5) * 100;
+    const reichweiteScore = (d.reichweite / 4) * 100;
+    const zgScore = (d.zielgruppe / 5) * 100;
+    const qualScore = (d.qualitaet / 5) * 100;
+    const safetyScore = (d.brandsafety / 5) * 100;
+
+    // Gewichtung
+    const weights = {
+      thema: 0.25,
+      werbemethode: 0.20,
+      reichweite: 0.15,
+      zielgruppe: 0.15,
+      qualitaet: 0.15,
+      brandsafety: 0.10
+    };
+
+    const total =
+      themaScore * weights.thema +
+      wmScore * weights.werbemethode +
+      reichweiteScore * weights.reichweite +
+      zgScore * weights.zielgruppe +
+      qualScore * weights.qualitaet +
+      safetyScore * weights.brandsafety;
+
+    let empfehlung;
+    if (total >= 70) empfehlung = 'annehmen';
+    else if (total >= 50) empfehlung = 'pruefen';
+    else empfehlung = 'ablehnen';
+
+    // K.O.-Kriterium: Brand Safety <= 2 → maximal "prüfen"
+    if (d.brandsafety <= 2 && empfehlung === 'annehmen') {
+      empfehlung = 'pruefen';
+    }
+    // K.O.-Kriterium: Brand Safety = 1 → ablehnen
+    if (d.brandsafety === 1) {
+      empfehlung = 'ablehnen';
+    }
+
+    const reasons = generateReasons(d, { themaScore, wmScore, reichweiteScore, zgScore, qualScore, safetyScore });
+
+    return {
+      total: Math.round(total),
+      empfehlung,
+      breakdown: {
+        'Themen-Match (25%)': Math.round(themaScore),
+        'Werbemethode (20%)': Math.round(wmScore),
+        'Reichweite (15%)': Math.round(reichweiteScore),
+        'Zielgruppe (15%)': Math.round(zgScore),
+        'Qualität (15%)': Math.round(qualScore),
+        'Brand Safety (10%)': Math.round(safetyScore)
+      },
+      reasons
+    };
+  }
+
+  function generateReasons(d, scores) {
+    const reasons = [];
+    if (d.thema >= 4) reasons.push('Starker thematischer Fit zum Programm.');
+    else if (d.thema <= 2) reasons.push('Thema passt nur schwach zum Programm — Conversion-Risiko.');
+
+    const wm = werbemethodeScore[d.programm][d.werbemethode];
+    if (wm >= 4) reasons.push('Werbemethode passt gut zum Programm-Typ.');
+    else if (wm <= 2) reasons.push('Werbemethode (' + d.werbemethode + ') passt nicht ideal — kritisch prüfen.');
+
+    if (d.reichweite >= 3) reasons.push('Hohe Reichweite — guter Hebel.');
+    else if (d.reichweite === 1) reasons.push('Geringe Reichweite — Aufwand vs. Ertrag abwägen.');
+
+    if (d.zielgruppe >= 4) reasons.push('Zielgruppe passt sehr gut.');
+    else if (d.zielgruppe <= 2) reasons.push('Zielgruppe weicht ab — Conversion-Wahrscheinlichkeit niedrig.');
+
+    if (d.qualitaet <= 2) reasons.push('Inhaltliche Qualität niedrig — Marken-Wirkung prüfen.');
+    if (d.brandsafety <= 2) reasons.push('Brand-Safety-Risiko — vor Annahme klären.');
+    if (d.brandsafety === 1) reasons.push('Brand Safety nicht gegeben → Ablehnung empfohlen.');
+
+    if (reasons.length === 0) reasons.push('Solide Werte über alle Kriterien hinweg.');
+    return reasons;
+  }
+
+  function renderResult(result, data) {
+    const labels = { annehmen: 'ANNEHMEN', pruefen: 'PRÜFEN', ablehnen: 'ABLEHNEN' };
+    let html = `
+      <div class="result-box ${result.empfehlung}">
+        <div class="result-header">
+          <div>
+            <div class="result-label ${result.empfehlung}">${labels[result.empfehlung]}</div>
+            <div style="font-size:12px; color:#5a6a7a; margin-top:2px;">Empfehlung für ${data.programm}</div>
+          </div>
+          <div class="score-circle ${result.empfehlung}">${result.total}</div>
+        </div>
+        <div class="breakdown">
+    `;
+    for (const [key, val] of Object.entries(result.breakdown)) {
+      html += `<div class="breakdown-item"><span>${key}</span><strong>${val}/100</strong></div>`;
+    }
+    html += `</div><div class="reasons"><strong>Begründung:</strong><ul>`;
+    result.reasons.forEach(r => html += `<li>${escapeHtml(r)}</li>`);
+    html += `</ul></div></div>`;
+    document.getElementById('resultBox').innerHTML = html;
+  }
+
+  function saveEvaluation() {
+    const evaluation = evaluate();
+    if (!evaluation) return;
+    const list = getStored();
+    list.unshift({
+      id: Date.now(),
+      timestamp: new Date().toISOString(),
+      data: evaluation.data,
+      result: evaluation.result
+    });
+    localStorage.setItem('affiliate_evaluations', JSON.stringify(list));
+    renderHistory();
+    renderStats();
+    alert('Bewertung gespeichert.');
+  }
+
+  function getStored() {
+    try { return JSON.parse(localStorage.getItem('affiliate_evaluations') || '[]'); }
+    catch { return []; }
+  }
+
+  function deleteEval(id, ev) {
+    ev.stopPropagation();
+    if (!confirm('Diese Bewertung wirklich löschen?')) return;
+    const list = getStored().filter(e => e.id !== id);
+    localStorage.setItem('affiliate_evaluations', JSON.stringify(list));
+    renderHistory();
+    renderStats();
+  }
+
+  function loadEval(id) {
+    const item = getStored().find(e => e.id === id);
+    if (!item) return;
+    const d = item.data;
+    document.getElementById('publisherName').value = d.publisherName;
+    document.getElementById('url').value = d.url;
+    document.getElementById('programm').value = d.programm;
+    document.getElementById('thema').value = d.thema;
+    document.getElementById('werbemethode').value = d.werbemethode;
+    document.getElementById('reichweite').value = d.reichweite;
+    document.getElementById('zielgruppe').value = d.zielgruppe;
+    document.getElementById('qualitaet').value = d.qualitaet;
+    document.getElementById('brandsafety').value = d.brandsafety;
+    document.getElementById('land').value = d.land;
+    document.getElementById('notizen').value = d.notizen;
+    document.getElementById('zielgruppeVal').textContent = d.zielgruppe;
+    document.getElementById('qualitaetVal').textContent = d.qualitaet;
+    document.getElementById('brandsafetyVal').textContent = d.brandsafety;
+    renderResult(item.result, d);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function renderHistory() {
+    const list = getStored();
+    const fProg = document.getElementById('filterProgramm').value;
+    const fEmpf = document.getElementById('filterEmpfehlung').value;
+    const filtered = list.filter(e =>
+      (!fProg || e.data.programm === fProg) &&
+      (!fEmpf || e.result.empfehlung === fEmpf)
+    );
+    const container = document.getElementById('historyList');
+    if (filtered.length === 0) {
+      container.innerHTML = '<div class="empty-state">Noch keine Bewertungen ' + (list.length ? 'mit diesem Filter' : 'gespeichert') + '.</div>';
+      return;
+    }
+    const labels = { annehmen: 'Annehmen', pruefen: 'Prüfen', ablehnen: 'Ablehnen' };
+    container.innerHTML = filtered.map(e => `
+      <div class="history-item" onclick="loadEval(${e.id})">
+        <div class="history-item-header">
+          <div class="history-name">${escapeHtml(e.data.publisherName)}</div>
+          <span class="badge ${e.result.empfehlung}">${labels[e.result.empfehlung]} · ${e.result.total}</span>
+        </div>
+        <div class="history-meta">
+          ${escapeHtml(e.data.programm)} · ${new Date(e.timestamp).toLocaleDateString('de-DE')}
+          <button class="btn-danger" style="float:right; padding:2px 8px; font-size:11px;" onclick="deleteEval(${e.id}, event)">Löschen</button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function renderStats() {
+    const list = getStored();
+    const annehmen = list.filter(e => e.result.empfehlung === 'annehmen').length;
+    const pruefen = list.filter(e => e.result.empfehlung === 'pruefen').length;
+    const ablehnen = list.filter(e => e.result.empfehlung === 'ablehnen').length;
+    document.getElementById('stats').innerHTML = `
+      <div class="stat"><div class="stat-value">${list.length}</div><div class="stat-label">Gesamt</div></div>
+      <div class="stat"><div class="stat-value" style="color:#27ae60">${annehmen}</div><div class="stat-label">Annehmen</div></div>
+      <div class="stat"><div class="stat-value" style="color:#f39c12">${pruefen}</div><div class="stat-label">Prüfen</div></div>
+      <div class="stat"><div class="stat-value" style="color:#c0392b">${ablehnen}</div><div class="stat-label">Ablehnen</div></div>
+    `;
+  }
+
+  function exportCSV() {
+    const list = getStored();
+    if (list.length === 0) { alert('Keine Daten zum Export.'); return; }
+    const headers = ['Datum','Publisher','URL','Programm','Empfehlung','Score','Themen-Match','Werbemethode','Reichweite','Zielgruppe','Qualität','Brand Safety','Land','Notizen'];
+    const rows = list.map(e => [
+      new Date(e.timestamp).toLocaleDateString('de-DE'),
+      e.data.publisherName, e.data.url, e.data.programm,
+      e.result.empfehlung, e.result.total,
+      e.data.thema, e.data.werbemethode, e.data.reichweite,
+      e.data.zielgruppe, e.data.qualitaet, e.data.brandsafety,
+      e.data.land, e.data.notizen
+    ]);
+    const csv = [headers, ...rows].map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(';')).join('\n');
+    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = 'affiliate-bewertungen-' + new Date().toISOString().slice(0,10) + '.csv';
+    link.click();
+  }
+
+  function clearAll() {
+    if (!confirm('Wirklich ALLE Bewertungen löschen? Das kann nicht rückgängig gemacht werden.')) return;
+    localStorage.removeItem('affiliate_evaluations');
+    renderHistory();
+    renderStats();
+  }
+
+  function resetForm() {
+    document.getElementById('publisherName').value = '';
+    document.getElementById('url').value = '';
+    document.getElementById('thema').value = '3';
+    document.getElementById('werbemethode').value = 'content';
+    document.getElementById('reichweite').value = '2';
+    document.getElementById('zielgruppe').value = '3';
+    document.getElementById('qualitaet').value = '3';
+    document.getElementById('brandsafety').value = '3';
+    document.getElementById('land').value = 'DE';
+    document.getElementById('notizen').value = '';
+    document.getElementById('zielgruppeVal').textContent = '3';
+    document.getElementById('qualitaetVal').textContent = '3';
+    document.getElementById('brandsafetyVal').textContent = '3';
+    document.getElementById('resultBox').innerHTML = '';
+  }
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  // Init
+  renderHistory();
+  renderStats();
+</script>
+</body>
+</html>
